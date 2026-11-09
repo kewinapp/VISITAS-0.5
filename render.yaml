@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: visitas-pj
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        sync: false
+      - key: REGISTER_CODE
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

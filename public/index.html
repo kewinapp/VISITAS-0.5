@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Visitas PJ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1c2430;--mu:#667085;--bd:#d9dee5;--ac:#0b5fff;--ac2:#e8f0ff;--rd:#c62828;--wn:#fff4e0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1b212a;--tx:#eef1f5;--mu:#98a2b3;--bd:#2d3643;--ac:#5b92ff;--ac2:#1f2b45;--rd:#ff7b72;--wn:#3a2f17}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px}h1{font-size:1.3rem;margin:0 0 12px}h2{font-size:1rem;margin:20px 0 8px;color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px}
+label{display:block;font-size:.85rem;color:var(--mu);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px}textarea{min-height:80px}
+button{font:inherit;border:0;border-radius:8px;padding:10px 14px;background:var(--ac);color:#fff;cursor:pointer}
+button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transparent;color:var(--rd)}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row>button{flex:0 0 auto}
+.bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}.bar input{flex:1;min-width:150px}
+.it{cursor:pointer}.it b{display:block}.it small,.dl span{color:var(--mu)}
+.tag{display:inline-block;background:var(--ac2);color:var(--ac);border-radius:99px;padding:2px 10px;font-size:.75rem;margin:4px 4px 0 0}
+.pw{white-space:pre-wrap}.hide{display:none}.msg{color:var(--mu);text-align:center;padding:20px}.err{color:var(--rd);min-height:1.2em;margin-top:8px}
+.aviso{background:var(--wn);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.9rem}.dl{margin:6px 0}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.top span{color:var(--mu);font-size:.9rem}
+</style></head><body><main>
+
+<div id="auth" class="hide"><h1>📋 Visitas PJ</h1><div class="card">
+<div class="row"><button class="sec" id="tLogin">Entrar</button><button class="sec" id="tReg">Criar conta</button></div>
+<label>Usuário</label><input id="u" autocapitalize="none" autocomplete="username">
+<div id="regOnly" class="hide"><label>Seu nome (aparece para os colegas)</label><input id="nm"><label>Código de convite</label><input id="cd"></div>
+<label>Senha (mínimo 8 caracteres)</label><input id="pw" type="password" autocomplete="current-password">
+<div id="err" class="err"></div><div class="bar"><button id="go">Entrar</button></div></div></div>
+
+<div id="list" class="hide">
+<div class="top"><h1>📋 Visitas PJ</h1><span><span id="who"></span> · <a href="#" id="out">Sair</a></span></div>
+<div class="bar"><button class="sec" id="toRes">📊 Resumo do dia</button></div>
+<div class="card"><b>Consultar CNPJ</b>
+<div class="bar"><input id="cq" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18"><button id="cb">Consultar</button></div>
+<div id="cr"></div></div>
+<div class="bar"><input id="q" placeholder="Buscar nas minhas visitas"><button id="new">+ Nova visita</button></div>
+<div id="items"><div class="msg">Carregando…</div></div></div>
+
+<div id="resumo" class="hide">
+<div class="top"><h1>📊 Resumo do dia</h1><button class="sec" id="toList">← Visitas</button></div>
+<div class="card"><label>Dia</label><input type="date" id="dia"><div id="cont" style="margin-top:10px"></div></div>
+<div id="rs"></div></div>
+
+<div id="form" class="hide"><h1 id="ft">Nova visita</h1><div class="card">
+<h2>Empresa</h2>
+<label>Data da visita</label><input type="date" id="data">
+<label>Nome da empresa</label><input id="nome">
+<label>CNPJ</label><input id="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18"><div id="aviso"></div>
+<label>Pessoa de contato</label><input id="contato">
+<label>Segmento</label><input id="segmento">
+<label>Classificação do cliente</label><select id="lista"><option value="">Selecione</option><option value="Verde">🟢 Lista verde</option><option value="Amarela">🟡 Lista amarela</option><option value="Cinza">⚪ Lista cinza</option><option value="Vermelha">🔴 Lista vermelha</option></select>
+<label>Como a empresa começou (breve resumo)</label><textarea id="historia"></textarea>
+<h2>Sócios (até 5)</h2><div id="socios"></div><button class="sec" id="addSocio" type="button">+ Adicionar sócio</button>
+<h2>Financeiro</h2>
+<label>Faturamento (R$)</label><input id="fat" placeholder="Ex.: 150.000 / mês">
+<label>Recebimentos</label><select id="rec"><option value="">Selecione</option><option>Boleto</option><option>Adquirência (cartão)</option><option>Boleto e adquirência</option><option>Outros</option></select>
+<label>Pagamentos por boleto — quantidade</label><input id="pagBol" type="number" min="0" inputmode="numeric">
+<label>Investimentos</label><textarea id="inv"></textarea>
+<h2>Capital de giro</h2>
+<label>Interesse em capital de giro?</label><select id="cg"><option value="">Selecione</option><option>Sim</option><option>Não</option><option>Talvez / avaliar</option></select>
+<label>Qual garantia disponível?</label><input id="gar" placeholder="Ex.: recebíveis, imóvel, aval, veículo">
+<label>Como viabiliza?</label><textarea id="viabiliza" placeholder="Como você viabiliza este cliente: produtos, estratégia, próximos passos"></textarea></div>
+<div class="bar"><button id="save">Salvar</button><button class="sec" id="cancel">Voltar</button><button class="del" id="rm">Excluir</button></div></div>
+</main>
+<script>
+const $=id=>document.getElementById(id),F=['data','nome','cnpj','contato','segmento','lista','historia','fat','rec','pagBol','inv','cg','gar','viabiliza'];
+let rows=[],cur=null,reg=false;
+const hoje=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),ic={Verde:'🟢',Amarela:'🟡',Cinza:'⚪',Vermelha:'🔴'};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(p,m='GET',b){const r=await fetch(p,{method:m,headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.erro||'Erro');e.st=r.status;throw e}return j}
+function show(id){['auth','list','resumo','form'].forEach(x=>$(x).classList.toggle('hide',x!==id));scrollTo(0,0)}
+function mode(r){reg=r;$('regOnly').classList.toggle('hide',!r);$('go').textContent=r?'Criar conta':'Entrar';$('err').textContent='';$('pw').autocomplete=r?'new-password':'current-password'}
+$('tLogin').onclick=()=>mode(false);$('tReg').onclick=()=>mode(true);
+$('go').onclick=async()=>{try{const b={username:$('u').value,senha:$('pw').value};
+  if(reg){b.nome=$('nm').value;b.codigo=$('cd').value}
+  const me=await api(reg?'/api/register':'/api/login','POST',b);$('pw').value='';enter(me)}catch(e){$('err').textContent=e.message}};
+$('out').onclick=async e=>{e.preventDefault();await api('/api/logout','POST',{});rows=[];show('auth')};
+async function enter(me){$('who').textContent=me.nome;show('list');await load()}
+async function load(){try{rows=(await api('/api/visitas')).visitas;render()}catch(e){if(e.st===401)show('auth');else $('items').innerHTML='<div class="msg">Erro ao carregar.</div>'}}
+function render(){const q=$('q').value.toLowerCase().replace(/[.\-\/]/g,'');
+  const l=rows.filter(r=>!q||((r.nome||'')+(r.cnpj||'')).toLowerCase().replace(/[.\-\/]/g,'').includes(q));
+  $('items').innerHTML=l.length?l.map(r=>`<div class="card it" data-id="${esc(r.id)}"><b>${esc(r.nome)||'(sem nome)'}</b><small>${esc(r.cnpj)} · ${esc(r.contato)} · ${r.data?r.data.split('-').reverse().join('/'):''}</small><div>${r.lista?`<span class="tag">${({Verde:'🟢',Amarela:'🟡',Cinza:'⚪',Vermelha:'🔴'})[r.lista]||''} Lista ${esc(r.lista.toLowerCase())}</span>`:''}${r.segmento?`<span class="tag">${esc(r.segmento)}</span>`:''}${r.cg==='Sim'?'<span class="tag">Capital de giro: Sim</span>':''}</div></div>`).join(''):'<div class="msg">Nenhuma visita registrada ainda.</div>'}
+const mask=e=>{let v=e.target.value.replace(/\D/g,'').slice(0,14);
+  v=v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');e.target.value=v};
+function lista(r){return r.map(x=>`<div class="dl"><b>${esc(x.mine?'Você':x.gerente)}</b> · ${esc(x.empresa||'')} <span>${x.data?x.data.split('-').reverse().join('/'):''}</span></div>`).join('')}
+async function consulta(c){const d=c.replace(/\D/g,'');if(d.length!==14)throw new Error('Informe os 14 dígitos do CNPJ');return (await api('/api/cnpj/'+d)).res}
+$('cq').oninput=mask;$('cnpj').oninput=async e=>{mask(e);$('aviso').innerHTML='';
+  if(e.target.value.length===18)try{const o=(await consulta(e.target.value)).filter(x=>!x.mine);
+    if(o.length)$('aviso').innerHTML='<div class="aviso">⚠️ Já em atuação por:'+lista(o)+'</div>'}catch(x){}};
+$('cb').onclick=async()=>{try{const r=await consulta($('cq').value);
+  $('cr').innerHTML=r.length?'<div class="aviso">⚠️ Já em atuação por:'+lista(r)+'</div>':'<div class="aviso">✅ Nenhum gerente registrou este CNPJ.</div>'}
+  catch(e){$('cr').innerHTML=`<div class="err">${esc(e.message)}</div>`}};
+function socio(v=''){const d=document.createElement('div');d.className='row dl';
+  d.innerHTML='<input class="s" placeholder="Nome do sócio"><button class="del" type="button">✕</button>';
+  d.querySelector('input').value=v;d.querySelector('button').onclick=()=>{d.remove();chk()};$('socios').appendChild(d);chk()}
+function chk(){$('addSocio').classList.toggle('hide',$('socios').children.length>=5)}
+function open(r){cur=r||null;$('ft').textContent=r?'Editar visita':'Nova visita';F.forEach(k=>$(k).value=r?.[k]??'');
+  if(!r)$('data').value=hoje();$('aviso').innerHTML='';$('socios').innerHTML='';
+  (r?.socios?.length?r.socios:['']).forEach(s=>socio(s));$('rm').classList.toggle('hide',!r);show('form')}
+$('new').onclick=()=>open();$('cancel').onclick=()=>show('list');$('q').oninput=render;
+$('addSocio').onclick=()=>{if($('socios').children.length<5)socio()};
+$('items').onclick=e=>{const c=e.target.closest('.it');if(c)open(rows.find(r=>r.id===c.dataset.id))};
+$('save').onclick=async()=>{if(!$('nome').value.trim())return alert('Informe o nome da empresa.');
+  const o={};F.forEach(k=>o[k]=$(k).value);o.socios=[...document.querySelectorAll('.s')].map(i=>i.value.trim()).filter(Boolean);
+  try{await api('/api/visitas/'+(cur?.id||'v'+Date.now()),'PUT',o);show('list');load()}catch(e){alert(e.message)}};
+$('rm').onclick=async()=>{if(!cur||!confirm('Excluir esta visita?'))return;
+  try{await api('/api/visitas/'+cur.id,'DELETE');show('list');load()}catch(e){alert(e.message)}};
+async function resumo(){const d=$('dia').value;if(!d)return;
+  try{const r=(await api('/api/resumo?dia='+d)).res,c={Verde:0,Amarela:0,Cinza:0,Vermelha:0};
+    r.forEach(x=>{if(c[x.lista]!==undefined)c[x.lista]++});
+    $('cont').innerHTML=`<b>${r.length}</b> visita(s) · `+Object.keys(c).map(k=>`${ic[k]} ${c[k]}`).join(' &nbsp; ');
+    $('rs').innerHTML=r.length?r.map(x=>`<div class="card"><b>${esc(x.nome)||'(sem nome)'}</b>
+<div class="dl"><span>Gerente:</span> ${esc(x.mine?'Você':x.gerente)}</div><div class="dl"><span>CNPJ:</span> ${esc(x.cnpj)||'—'}</div>
+<div class="dl"><span>Lista:</span> ${x.lista?ic[x.lista]+' '+esc(x.lista):'—'}</div>
+<div class="dl pw"><span>Como viabiliza:</span> ${esc(x.viabiliza)||'—'}</div></div>`).join(''):'<div class="msg">Nenhuma visita neste dia.</div>'}
+  catch(e){$('rs').innerHTML=`<div class="err">${esc(e.message)}</div>`}}
+$('toRes').onclick=()=>{$('dia').value=hoje();show('resumo');resumo()};$('toList').onclick=()=>show('list');$('dia').onchange=resumo;
+(async()=>{try{enter(await api('/api/me'))}catch(e){show('auth')}})();
+</script></body></html>
