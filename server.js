@@ -51,16 +51,43 @@ app.get('/api/cnpj/:c',auth,async(q,s)=>{
   const r=await pool.query(`SELECT u.name gerente,(u.id=$2) mine,v.data->>'nome' empresa,v.data->>'data' data
     FROM visitas v JOIN users u ON u.id=v.user_id WHERE v.cnpj=$1 ORDER BY v.updated DESC`,[c,q.uid]);
   s.json({res:r.rows})});
-app.get('/api/resumo',auth,async(q,s)=>{
-  const d=String(q.query.dia||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return s.status(400).json({erro:'Data inválida'});
-  const r=await pool.query(`SELECT u.name gerente,(u.id=$2) mine,v.data->>'nome' nome,v.data->>'cnpj' cnpj,v.data->>'lista' lista,
-    COALESCE(v.data->>'viabiliza',v.data->>'obs') viabiliza FROM visitas v JOIN users u ON u.id=v.user_id
-    WHERE v.data->>'data'=$1 ORDER BY u.name,v.updated DESC`,[d,q.uid]);
-  s.json({res:r.rows})});
+const W=f=>(q,s)=>f(q,s).catch(e=>{console.error(e);s.status(500).json({erro:'Erro no servidor'})});
+const DIA=/^\d{4}-\d{2}-\d{2}$/,ID=/^[\w-]{1,40}$/;
+function per(q){let de=String(q.query.de||''),ate=String(q.query.ate||'');
+  if(!DIA.test(de)||!DIA.test(ate))return null;if(de>ate)[de,ate]=[ate,de];return[de,ate]}
+app.get('/api/resumo',auth,W(async(q,s)=>{
+  const p=per(q);if(!p)return s.status(400).json({erro:'Período inválido'});
+  const r=await pool.query(`SELECT v.data->>'data' dia,v.data->>'nome' nome,v.data->>'cnpj' cnpj,v.data->>'contato' contato,
+    v.data->>'segmento' segmento,v.data->>'lista' lista,COALESCE(v.data->>'viabiliza',v.data->>'obs') viabiliza
+    FROM visitas v WHERE v.user_id=$1 AND v.data->>'data' BETWEEN $2 AND $3 ORDER BY v.data->>'data' DESC,v.updated DESC`,[q.uid,p[0],p[1]]);
+  s.json({res:r.rows})}));
+const SPEC={seguro:{s:['cliente','produto'],n:['margem']},consorcio:{s:['cliente'],n:['carta','margem']},
+  viabilizado:{s:['cliente','opcao'],n:['pagamentos','boleto','safrapay','investimentos','margem']},
+  credenciamento:{s:['cliente','arv'],n:['quantidade','volume']}};
+const ENUM={produto:['Vida resgatável','Residencial'],opcao:['Todas','Pagamentos','Recebimentos boleto','Recebimentos Safrapay','Investimentos'],arv:['Sim','Não']};
+app.get('/api/producao',auth,W(async(q,s)=>{
+  const p=per(q);if(!p)return s.status(400).json({erro:'Período inválido'});
+  const r=await pool.query('SELECT id,tipo,dia,data FROM producao WHERE user_id=$1 AND dia BETWEEN $2 AND $3 ORDER BY dia DESC,updated DESC',[q.uid,p[0],p[1]]);
+  s.json({res:r.rows.map(x=>({id:x.id,tipo:x.tipo,dia:x.dia,...x.data}))})}));
+app.put('/api/producao/:id',auth,W(async(q,s)=>{
+  if(!ID.test(q.params.id))return s.status(400).json({erro:'ID inválido'});
+  const b=q.body||{},sp=SPEC[b.tipo];if(!sp)return s.status(400).json({erro:'Tipo inválido'});
+  const dia=String(b.dia||'');if(!DIA.test(dia))return s.status(400).json({erro:'Data inválida'});
+  const d={};sp.s.forEach(k=>d[k]=String(b[k]??'').slice(0,200));
+  sp.n.forEach(k=>{const v=Number(b[k]);d[k]=Number.isFinite(v)&&v>=0&&v<1e12?v:0});
+  Object.keys(ENUM).forEach(k=>{if(k in d&&!ENUM[k].includes(d[k]))d[k]=k==='opcao'?'Todas':''});
+  const r=await pool.query(`INSERT INTO producao(id,user_id,tipo,dia,data,updated) VALUES($1,$2,$3,$4,$5,$6)
+    ON CONFLICT(id) DO UPDATE SET tipo=$3,dia=$4,data=$5,updated=$6 WHERE producao.user_id=$2`,[q.params.id,q.uid,b.tipo,dia,d,Date.now()]);
+  r.rowCount?s.json({ok:1}):s.status(403).json({erro:'Sem permissão'})}));
+app.delete('/api/producao/:id',auth,W(async(q,s)=>{
+  await pool.query('DELETE FROM producao WHERE id=$1 AND user_id=$2',[q.params.id,q.uid]);s.json({ok:1})}));
+process.on('unhandledRejection',e=>console.error(e));
 app.use(express.static(path.join(__dirname,'public')));
 (async()=>{
   await pool.query(`CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY,username TEXT UNIQUE NOT NULL,name TEXT NOT NULL,pass TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS visitas(id TEXT PRIMARY KEY,user_id INT NOT NULL REFERENCES users(id),cnpj TEXT,data JSONB NOT NULL,updated BIGINT);
-  CREATE INDEX IF NOT EXISTS visitas_cnpj ON visitas(cnpj)`);
+  CREATE INDEX IF NOT EXISTS visitas_cnpj ON visitas(cnpj);
+  CREATE TABLE IF NOT EXISTS producao(id TEXT PRIMARY KEY,user_id INT NOT NULL REFERENCES users(id),tipo TEXT NOT NULL,dia TEXT NOT NULL,data JSONB NOT NULL,updated BIGINT);
+  CREATE INDEX IF NOT EXISTS producao_u ON producao(user_id,dia)`);
   app.listen(process.env.PORT||3000,()=>console.log('ok'));
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><title>Visitas PJ</title>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Agenda Business</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#1c2430;--mu:#667085;--bd:#d9dee5;--ac:#0b5fff;--ac2:#e8f0ff;--rd:#c62828;--wn:#fff4e0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1b212a;--tx:#eef1f5;--mu:#98a2b3;--bd:#2d3643;--ac:#5b92ff;--ac2:#1f2b45;--rd:#ff7b72;--wn:#3a2f17}}
@@ -13,23 +14,28 @@ button{font:inherit;border:0;border-radius:8px;padding:10px 14px;background:var(
 button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transparent;color:var(--rd)}
 .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row>button{flex:0 0 auto}
 .bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}.bar input{flex:1;min-width:150px}
+.tabs{display:flex;gap:8px;margin:4px 0 14px}.tabs button{flex:1;background:var(--ac2);color:var(--ac);font-weight:600}.tabs button.on{background:var(--ac);color:#fff}
 .it{cursor:pointer}.it b{display:block}.it small,.dl span{color:var(--mu)}
 .tag{display:inline-block;background:var(--ac2);color:var(--ac);border-radius:99px;padding:2px 10px;font-size:.75rem;margin:4px 4px 0 0}
-.pw{white-space:pre-wrap}.hide{display:none}.msg{color:var(--mu);text-align:center;padding:20px}.err{color:var(--rd);min-height:1.2em;margin-top:8px}
+.pw{white-space:pre-wrap}.ver{position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));font-size:.75rem;color:var(--mu);opacity:.8;pointer-events:none}.hide{display:none}.msg{color:var(--mu);text-align:center;padding:20px}.err{color:var(--rd);min-height:1.2em;margin-top:8px}
 .aviso{background:var(--wn);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.9rem}.dl{margin:6px 0}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.top span{color:var(--mu);font-size:.9rem}
 </style></head><body><main>
+<div class="ver">v0.7</div>
 
-<div id="auth" class="hide"><h1>📋 Visitas PJ</h1><div class="card">
+<div id="auth" class="hide"><h1>📋 Agenda Business</h1><div class="card">
 <div class="row"><button class="sec" id="tLogin">Entrar</button><button class="sec" id="tReg">Criar conta</button></div>
 <label>Usuário</label><input id="u" autocapitalize="none" autocomplete="username">
 <div id="regOnly" class="hide"><label>Seu nome (aparece para os colegas)</label><input id="nm"><label>Código de convite</label><input id="cd"></div>
 <label>Senha (mínimo 8 caracteres)</label><input id="pw" type="password" autocomplete="current-password">
 <div id="err" class="err"></div><div class="bar"><button id="go">Entrar</button></div></div></div>
 
+<div id="hdr" class="hide">
+<div class="top"><h1>📋 Agenda Business</h1><span><span id="who"></span> · <a href="#" id="out">Sair</a></span></div>
+<div class="tabs"><button id="tVis">Visitas PJ</button><button id="tProd">Produção</button></div></div>
+
 <div id="list" class="hide">
-<div class="top"><h1>📋 Visitas PJ</h1><span><span id="who"></span> · <a href="#" id="out">Sair</a></span></div>
-<div class="bar"><button class="sec" id="toRes">📊 Resumo do dia</button></div>
+<div class="bar"><button class="sec" id="toRes">📊 Resumo</button></div>
 <div class="card"><b>Consultar CNPJ</b>
 <div class="bar"><input id="cq" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18"><button id="cb">Consultar</button></div>
 <div id="cr"></div></div>
@@ -37,9 +43,23 @@ button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transpare
 <div id="items"><div class="msg">Carregando…</div></div></div>
 
 <div id="resumo" class="hide">
-<div class="top"><h1>📊 Resumo do dia</h1><button class="sec" id="toList">← Visitas</button></div>
-<div class="card"><label>Dia</label><input type="date" id="dia"><div id="cont" style="margin-top:10px"></div></div>
-<div id="rs"></div></div>
+<div class="card"><b>📊 Resumo das minhas visitas</b>
+<div class="row"><div><label>De</label><input type="date" id="rde"></div><div><label>Até</label><input type="date" id="rate"></div></div>
+<div class="bar"><button class="sec" id="rHoje">Hoje</button><button class="sec" id="rMes">Este mês</button><button class="sec" id="rAnt">Mês passado</button></div>
+<div id="cont"></div></div>
+<div class="bar"><button id="rWa">💬 WhatsApp</button><button class="sec" id="rCp">Copiar texto</button><button class="sec" id="rXl">📗 Excel</button></div>
+<div id="rs"></div>
+<div class="bar"><button class="sec" id="rBack">← Voltar</button></div></div>
+
+<div id="prod" class="hide">
+<div class="bar"><button id="pnew">+ Lançar produção</button></div>
+<h2 id="pmt">Mês atual</h2><div id="pmes"></div>
+<div class="card"><b>Período selecionado</b>
+<div class="row"><div><label>De</label><input type="date" id="pde"></div><div><label>Até</label><input type="date" id="pate"></div></div>
+<div class="bar"><button class="sec" id="pMes">Este mês</button><button class="sec" id="pAnt">Mês passado</button></div></div>
+<div class="bar"><button id="pWa">💬 WhatsApp</button><button class="sec" id="pCp">Copiar texto</button><button class="sec" id="pXl">📗 Excel</button></div>
+<div id="pper"></div>
+<h2>Lançamentos do período</h2><div id="plist"></div></div>
 
 <div id="form" class="hide"><h1 id="ft">Nova visita</h1><div class="card">
 <h2>Empresa</h2>
@@ -61,15 +81,47 @@ button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transpare
 <label>Qual garantia disponível?</label><input id="gar" placeholder="Ex.: recebíveis, imóvel, aval, veículo">
 <label>Como viabiliza?</label><textarea id="viabiliza" placeholder="Como você viabiliza este cliente: produtos, estratégia, próximos passos"></textarea></div>
 <div class="bar"><button id="save">Salvar</button><button class="sec" id="cancel">Voltar</button><button class="del" id="rm">Excluir</button></div></div>
+
+<div id="pform" class="hide"><h1 id="pft">Lançar produção</h1><div class="card">
+<label>Item</label><select id="p_tipo"><option value="seguro">🛡️ Seguros</option><option value="consorcio">🤝 Consórcio</option><option value="viabilizado">✅ Viabilizado novo</option><option value="credenciamento">💳 Credenciamento</option></select>
+<label>Data</label><input type="date" id="p_dia">
+<label>Cliente (opcional)</label><input id="p_cliente">
+<div data-t="seguro"><label>Produto</label><select id="p_produto"><option>Vida resgatável</option><option>Residencial</option></select></div>
+<div data-t="consorcio"><label>Valor da carta (R$)</label><input id="p_carta" type="number" step="0.01" min="0" inputmode="decimal"></div>
+<div data-t="viabilizado"><label>Viabilizado (selecione)</label><select id="p_opcao"><option>Todas</option><option>Pagamentos</option><option>Recebimentos boleto</option><option>Recebimentos Safrapay</option><option>Investimentos</option></select>
+<div data-o="Pagamentos"><label>Pagamentos (R$)</label><input id="p_pag" type="number" step="0.01" min="0" inputmode="decimal"></div>
+<div data-o="Recebimentos boleto"><label>Recebimentos boleto (R$)</label><input id="p_bol" type="number" step="0.01" min="0" inputmode="decimal"></div>
+<div data-o="Recebimentos Safrapay"><label>Recebimentos Safrapay (R$)</label><input id="p_saf" type="number" step="0.01" min="0" inputmode="decimal"></div>
+<div data-o="Investimentos"><label>Investimentos (R$)</label><input id="p_inv" type="number" step="0.01" min="0" inputmode="decimal"></div></div>
+<div data-t="seguro consorcio viabilizado"><label>Margem (R$)</label><input id="p_margem" type="number" step="0.01" min="0" inputmode="decimal"></div>
+<div data-t="credenciamento"><label>Quantidade</label><input id="p_qtd" type="number" min="0" inputmode="numeric">
+<label>Volume (R$)</label><input id="p_vol" type="number" step="0.01" min="0" inputmode="decimal">
+<label>Tem ARV?</label><select id="p_arv"><option>Sim</option><option>Não</option></select></div></div>
+<div class="bar"><button id="psave">Salvar</button><button class="sec" id="pcancel">Voltar</button><button class="del" id="prm">Excluir</button></div></div>
 </main>
 <script>
 const $=id=>document.getElementById(id),F=['data','nome','cnpj','contato','segmento','lista','historia','fat','rec','pagBol','inv','cg','gar','viabiliza'];
-let rows=[],cur=null,reg=false;
-const hoje=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),ic={Verde:'🟢',Amarela:'🟡',Cinza:'⚪',Vermelha:'🔴'};
+const S=['auth','list','resumo','prod','form','pform'];
+let rows=[],cur=null,reg=false,resRows=[],prodRows=[],mesRows=[],pcur=null;
+const ic={Verde:'🟢',Amarela:'🟡',Cinza:'⚪',Vermelha:'🔴'},ico={Seguros:'🛡️','Consórcio':'🤝','Viabilizado novo':'✅',Credenciamento:'💳',Total:'📈'};
+const TN={seguro:'🛡️ Seguro',consorcio:'🤝 Consórcio',viabilizado:'✅ Viabilizado novo',credenciamento:'💳 Credenciamento'};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const hoje=()=>iso(new Date()),mesIni=(o=0)=>{const d=new Date();return iso(new Date(d.getFullYear(),d.getMonth()+o,1))},mesFim=(o=0)=>{const d=new Date();return iso(new Date(d.getFullYear(),d.getMonth()+o+1,0))};
+const BR=d=>d?d.split('-').reverse().join('/'):'',R=v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const per=(a,b)=>a===b?BR(a):BR(a)+' a '+BR(b);
 async function api(p,m='GET',b){const r=await fetch(p,{method:m,headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined});
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.erro||'Erro');e.st=r.status;throw e}return j}
-function show(id){['auth','list','resumo','form'].forEach(x=>$(x).classList.toggle('hide',x!==id));scrollTo(0,0)}
+function show(id){S.forEach(x=>$(x).classList.toggle('hide',x!==id));
+  $('hdr').classList.toggle('hide',!['list','resumo','prod'].includes(id));
+  $('tVis').classList.toggle('on',id!=='prod');$('tProd').classList.toggle('on',id==='prod');scrollTo(0,0)}
+/* exportar */
+function wa(t){window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
+async function cp(t){try{await navigator.clipboard.writeText(t);alert('Texto copiado.')}catch(e){prompt('Copie o texto:',t)}}
+function xl(r,nome){if(typeof XLSX!=='undefined'){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),'Resumo');XLSX.writeFile(wb,nome+'.xlsx');return}
+  const c='\ufeff'+r.map(l=>l.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv;charset=utf-8'}));a.download=nome+'.csv';a.click()}
+/* login */
 function mode(r){reg=r;$('regOnly').classList.toggle('hide',!r);$('go').textContent=r?'Criar conta':'Entrar';$('err').textContent='';$('pw').autocomplete=r?'new-password':'current-password'}
 $('tLogin').onclick=()=>mode(false);$('tReg').onclick=()=>mode(true);
 $('go').onclick=async()=>{try{const b={username:$('u').value,senha:$('pw').value};
@@ -77,13 +129,15 @@ $('go').onclick=async()=>{try{const b={username:$('u').value,senha:$('pw').value
   const me=await api(reg?'/api/register':'/api/login','POST',b);$('pw').value='';enter(me)}catch(e){$('err').textContent=e.message}};
 $('out').onclick=async e=>{e.preventDefault();await api('/api/logout','POST',{});rows=[];show('auth')};
 async function enter(me){$('who').textContent=me.nome;show('list');await load()}
+$('tVis').onclick=()=>{show('list');load()};$('tProd').onclick=()=>{if(!$('pde').value){$('pde').value=mesIni();$('pate').value=mesFim()}show('prod');loadProd()};
+/* visitas */
 async function load(){try{rows=(await api('/api/visitas')).visitas;render()}catch(e){if(e.st===401)show('auth');else $('items').innerHTML='<div class="msg">Erro ao carregar.</div>'}}
 function render(){const q=$('q').value.toLowerCase().replace(/[.\-\/]/g,'');
   const l=rows.filter(r=>!q||((r.nome||'')+(r.cnpj||'')).toLowerCase().replace(/[.\-\/]/g,'').includes(q));
-  $('items').innerHTML=l.length?l.map(r=>`<div class="card it" data-id="${esc(r.id)}"><b>${esc(r.nome)||'(sem nome)'}</b><small>${esc(r.cnpj)} · ${esc(r.contato)} · ${r.data?r.data.split('-').reverse().join('/'):''}</small><div>${r.lista?`<span class="tag">${({Verde:'🟢',Amarela:'🟡',Cinza:'⚪',Vermelha:'🔴'})[r.lista]||''} Lista ${esc(r.lista.toLowerCase())}</span>`:''}${r.segmento?`<span class="tag">${esc(r.segmento)}</span>`:''}${r.cg==='Sim'?'<span class="tag">Capital de giro: Sim</span>':''}</div></div>`).join(''):'<div class="msg">Nenhuma visita registrada ainda.</div>'}
+  $('items').innerHTML=l.length?l.map(r=>`<div class="card it" data-id="${esc(r.id)}"><b>${esc(r.nome)||'(sem nome)'}</b><small>${esc(r.cnpj)} · ${esc(r.contato)} · ${BR(r.data)}</small><div>${r.lista?`<span class="tag">${ic[r.lista]||''} Lista ${esc(r.lista.toLowerCase())}</span>`:''}${r.segmento?`<span class="tag">${esc(r.segmento)}</span>`:''}${r.cg==='Sim'?'<span class="tag">Capital de giro: Sim</span>':''}</div></div>`).join(''):'<div class="msg">Nenhuma visita registrada ainda.</div>'}
 const mask=e=>{let v=e.target.value.replace(/\D/g,'').slice(0,14);
   v=v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');e.target.value=v};
-function lista(r){return r.map(x=>`<div class="dl"><b>${esc(x.mine?'Você':x.gerente)}</b> · ${esc(x.empresa||'')} <span>${x.data?x.data.split('-').reverse().join('/'):''}</span></div>`).join('')}
+function lista(r){return r.map(x=>`<div class="dl"><b>${esc(x.mine?'Você':x.gerente)}</b> · ${esc(x.empresa||'')} <span>${BR(x.data)}</span></div>`).join('')}
 async function consulta(c){const d=c.replace(/\D/g,'');if(d.length!==14)throw new Error('Informe os 14 dígitos do CNPJ');return (await api('/api/cnpj/'+d)).res}
 $('cq').oninput=mask;$('cnpj').oninput=async e=>{mask(e);$('aviso').innerHTML='';
   if(e.target.value.length===18)try{const o=(await consulta(e.target.value)).filter(x=>!x.mine);
@@ -106,15 +160,73 @@ $('save').onclick=async()=>{if(!$('nome').value.trim())return alert('Informe o n
   try{await api('/api/visitas/'+(cur?.id||'v'+Date.now()),'PUT',o);show('list');load()}catch(e){alert(e.message)}};
 $('rm').onclick=async()=>{if(!cur||!confirm('Excluir esta visita?'))return;
   try{await api('/api/visitas/'+cur.id,'DELETE');show('list');load()}catch(e){alert(e.message)}};
-async function resumo(){const d=$('dia').value;if(!d)return;
-  try{const r=(await api('/api/resumo?dia='+d)).res,c={Verde:0,Amarela:0,Cinza:0,Vermelha:0};
-    r.forEach(x=>{if(c[x.lista]!==undefined)c[x.lista]++});
-    $('cont').innerHTML=`<b>${r.length}</b> visita(s) · `+Object.keys(c).map(k=>`${ic[k]} ${c[k]}`).join(' &nbsp; ');
-    $('rs').innerHTML=r.length?r.map(x=>`<div class="card"><b>${esc(x.nome)||'(sem nome)'}</b>
-<div class="dl"><span>Gerente:</span> ${esc(x.mine?'Você':x.gerente)}</div><div class="dl"><span>CNPJ:</span> ${esc(x.cnpj)||'—'}</div>
+/* resumo de visitas (somente do usuário logado) */
+function setR(a,b){$('rde').value=a;$('rate').value=b;resumo()}
+$('toRes').onclick=()=>{show('resumo');setR(hoje(),hoje())};$('rBack').onclick=()=>show('list');
+$('rHoje').onclick=()=>setR(hoje(),hoje());$('rMes').onclick=()=>setR(mesIni(),mesFim());$('rAnt').onclick=()=>setR(mesIni(-1),mesFim(-1));
+$('rde').onchange=$('rate').onchange=resumo;
+async function resumo(){const a=$('rde').value,b=$('rate').value;if(!a||!b)return;
+  try{resRows=(await api(`/api/resumo?de=${a}&ate=${b}`)).res;const c={Verde:0,Amarela:0,Cinza:0,Vermelha:0};
+    resRows.forEach(x=>{if(c[x.lista]!==undefined)c[x.lista]++});
+    $('cont').innerHTML=`<b>${resRows.length}</b> visita(s) · `+Object.keys(c).map(k=>`${ic[k]} ${c[k]}`).join(' &nbsp; ');
+    $('rs').innerHTML=resRows.length?resRows.map(x=>`<div class="card"><b>${esc(x.nome)||'(sem nome)'}</b>
+<div class="dl"><span>Data:</span> ${BR(x.dia)}</div><div class="dl"><span>CNPJ:</span> ${esc(x.cnpj)||'—'}</div>
 <div class="dl"><span>Lista:</span> ${x.lista?ic[x.lista]+' '+esc(x.lista):'—'}</div>
-<div class="dl pw"><span>Como viabiliza:</span> ${esc(x.viabiliza)||'—'}</div></div>`).join(''):'<div class="msg">Nenhuma visita neste dia.</div>'}
+<div class="dl pw"><span>Como viabiliza:</span> ${esc(x.viabiliza)||'—'}</div></div>`).join(''):'<div class="msg">Nenhuma visita neste período.</div>'}
   catch(e){$('rs').innerHTML=`<div class="err">${esc(e.message)}</div>`}}
-$('toRes').onclick=()=>{$('dia').value=hoje();show('resumo');resumo()};$('toList').onclick=()=>show('list');$('dia').onchange=resumo;
+function txtV(){let t=`*Agenda Business — Resumo de visitas*\n${per($('rde').value,$('rate').value)}\nTotal: ${resRows.length} visita(s)\n`;
+  resRows.forEach((x,i)=>{t+=`\n${i+1}) *${x.nome||'(sem nome)'}* — ${x.cnpj||'sem CNPJ'}\n${BR(x.dia)} · ${x.lista?ic[x.lista]+' Lista '+x.lista.toLowerCase():'sem lista'}\nComo viabiliza: ${x.viabiliza||'—'}\n`});return t}
+$('rWa').onclick=()=>wa(txtV());$('rCp').onclick=()=>cp(txtV());
+$('rXl').onclick=()=>xl([['Data','Empresa','CNPJ','Contato','Segmento','Lista','Como viabiliza'],...resRows.map(x=>[BR(x.dia),x.nome,x.cnpj,x.contato,x.segmento,x.lista,x.viabiliza])],'resumo-visitas-'+$('rde').value+'_'+$('rate').value);
+/* produção */
+function soma(rs){const s={seg:{n:0,m:0,v:{n:0,m:0},r:{n:0,m:0}},con:{n:0,carta:0,m:0},via:{n:0,pag:0,bol:0,saf:0,inv:0,m:0},cre:{qtd:0,vol:0,com:0,sem:0}};
+  rs.forEach(r=>{const m=+r.margem||0;
+    if(r.tipo==='seguro'){s.seg.n++;s.seg.m+=m;const k=r.produto==='Vida resgatável'?s.seg.v:r.produto==='Residencial'?s.seg.r:null;if(k){k.n++;k.m+=m}}
+    else if(r.tipo==='consorcio'){s.con.n++;s.con.carta+=+r.carta||0;s.con.m+=m}
+    else if(r.tipo==='viabilizado'){const v=s.via;v.n++;v.pag+=+r.pagamentos||0;v.bol+=+r.boleto||0;v.saf+=+r.safrapay||0;v.inv+=+r.investimentos||0;v.m+=m}
+    else if(r.tipo==='credenciamento'){const c=s.cre,q=+r.quantidade||0;c.qtd+=q;c.vol+=+r.volume||0;if(r.arv==='Sim')c.com+=q;else c.sem+=q}});return s}
+const linhas=s=>[['Seguros','Lançamentos',s.seg.n,'n'],['Seguros','Vida resgatável (qtd)',s.seg.v.n,'n'],['Seguros','Vida resgatável (margem)',s.seg.v.m,'r'],['Seguros','Residencial (qtd)',s.seg.r.n,'n'],['Seguros','Residencial (margem)',s.seg.r.m,'r'],['Seguros','Margem total',s.seg.m,'r'],
+['Consórcio','Cartas',s.con.n,'n'],['Consórcio','Valor das cartas',s.con.carta,'r'],['Consórcio','Margem',s.con.m,'r'],
+['Viabilizado novo','Lançamentos',s.via.n,'n'],['Viabilizado novo','Pagamentos',s.via.pag,'r'],['Viabilizado novo','Recebimentos boleto',s.via.bol,'r'],['Viabilizado novo','Recebimentos Safrapay',s.via.saf,'r'],['Viabilizado novo','Investimentos',s.via.inv,'r'],['Viabilizado novo','Margem',s.via.m,'r'],
+['Credenciamento','Quantidade',s.cre.qtd,'n'],['Credenciamento','Volume',s.cre.vol,'r'],['Credenciamento','Com ARV (qtd)',s.cre.com,'n'],['Credenciamento','Sem ARV (qtd)',s.cre.sem,'n'],
+['Total','Margem total geral',s.seg.m+s.con.m+s.via.m,'r']];
+const FM=l=>l[3]==='r'?R(l[2]):l[2];
+const grp=s=>{const g={};linhas(s).forEach(l=>(g[l[0]]=g[l[0]]||[]).push(l));return g};
+const htmlS=s=>{const g=grp(s);return Object.keys(g).map(k=>`<div class="card"><b>${ico[k]} ${k}</b>`+g[k].map(l=>`<div class="dl"><span>${l[1]}:</span> ${FM(l)}</div>`).join('')+'</div>').join('')};
+const det=r=>({seguro:`${r.produto||'Seguro'} · margem ${R(r.margem)}`,consorcio:`Carta ${R(r.carta)} · margem ${R(r.margem)}`,
+  viabilizado:`${r.opcao||'Todas'} · pag ${R(r.pagamentos)} · bol ${R(r.boleto)} · safra ${R(r.safrapay)} · inv ${R(r.investimentos)} · margem ${R(r.margem)}`,
+  credenciamento:`${r.quantidade||0} un · ${R(r.volume)} · ARV ${r.arv||'—'}`})[r.tipo]||'';
+const mesNome=()=>new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+async function loadProd(){const a=$('pde').value,b=$('pate').value;if(!a||!b)return;
+  $('pmt').textContent='Mês atual — '+mesNome();
+  try{const[m,p]=await Promise.all([api(`/api/producao?de=${mesIni()}&ate=${mesFim()}`),api(`/api/producao?de=${a}&ate=${b}`)]);
+    mesRows=m.res;prodRows=p.res;$('pmes').innerHTML=htmlS(soma(mesRows));$('pper').innerHTML=htmlS(soma(prodRows));
+    $('plist').innerHTML=prodRows.length?prodRows.map(r=>`<div class="card it" data-id="${esc(r.id)}"><b>${TN[r.tipo]||r.tipo}${r.cliente?' — '+esc(r.cliente):''}</b><small>${BR(r.dia)} · ${esc(det(r))}</small></div>`).join(''):'<div class="msg">Nenhum lançamento neste período.</div>'}
+  catch(e){if(e.st===401)show('auth');else $('plist').innerHTML=`<div class="err">${esc(e.message)}</div>`}}
+function setP(a,b){$('pde').value=a;$('pate').value=b;loadProd()}
+$('pMes').onclick=()=>setP(mesIni(),mesFim());$('pAnt').onclick=()=>setP(mesIni(-1),mesFim(-1));$('pde').onchange=$('pate').onchange=loadProd;
+function txtP(){const g=grp(soma(prodRows));let t=`*Agenda Business — Produção*\n${per($('pde').value,$('pate').value)}\n`;
+  Object.keys(g).forEach(k=>{t+=`\n*${k}*\n`+g[k].map(l=>`${l[1]}: ${FM(l)}`).join('\n')+'\n'});return t}
+$('pWa').onclick=()=>wa(txtP());$('pCp').onclick=()=>cp(txtP());
+$('pXl').onclick=()=>xl([['Período',per($('pde').value,$('pate').value)],[],['Item','Indicador','Valor'],...linhas(soma(prodRows)).map(l=>[l[0],l[1],l[2]]),[],['Data','Item','Cliente','Detalhe'],...prodRows.map(r=>[BR(r.dia),(TN[r.tipo]||r.tipo).replace(/^\S+\s/,''),r.cliente||'',det(r)])],'producao-'+$('pde').value+'_'+$('pate').value);
+function pt(){const t=$('p_tipo').value;document.querySelectorAll('[data-t]').forEach(e=>e.classList.toggle('hide',!e.dataset.t.split(' ').includes(t)));po()}
+function po(){const o=$('p_opcao').value;document.querySelectorAll('[data-o]').forEach(e=>e.classList.toggle('hide',!(o==='Todas'||e.dataset.o===o)))}
+$('p_tipo').onchange=pt;$('p_opcao').onchange=po;
+const PM={p_cliente:'cliente',p_produto:'produto',p_carta:'carta',p_opcao:'opcao',p_pag:'pagamentos',p_bol:'boleto',p_saf:'safrapay',p_inv:'investimentos',p_margem:'margem',p_qtd:'quantidade',p_vol:'volume',p_arv:'arv'};
+function openP(r){pcur=r||null;$('pft').textContent=r?'Editar lançamento':'Lançar produção';
+  Object.keys(PM).forEach(id=>{const e=$(id);e.value=r?.[PM[id]]??(e.tagName==='SELECT'?e.options[0].value:'')});
+  $('p_tipo').value=r?.tipo||'seguro';$('p_dia').value=r?.dia||hoje();pt();$('prm').classList.toggle('hide',!r);show('pform')}
+$('pnew').onclick=()=>openP();$('pcancel').onclick=()=>show('prod');
+$('plist').onclick=e=>{const c=e.target.closest('.it');if(c)openP(prodRows.find(r=>r.id===c.dataset.id))};
+$('psave').onclick=async()=>{const t=$('p_tipo').value,n=id=>parseFloat($(id).value)||0,o={tipo:t,dia:$('p_dia').value,cliente:$('p_cliente').value};
+  if(!o.dia)return alert('Informe a data.');
+  if(t==='seguro'){o.produto=$('p_produto').value;o.margem=n('p_margem')}
+  if(t==='consorcio'){o.carta=n('p_carta');o.margem=n('p_margem')}
+  if(t==='viabilizado'){const op=$('p_opcao').value,x=k=>op==='Todas'||op===k;o.opcao=op;
+    o.pagamentos=x('Pagamentos')?n('p_pag'):0;o.boleto=x('Recebimentos boleto')?n('p_bol'):0;o.safrapay=x('Recebimentos Safrapay')?n('p_saf'):0;o.investimentos=x('Investimentos')?n('p_inv'):0;o.margem=n('p_margem')}
+  if(t==='credenciamento'){o.quantidade=n('p_qtd');o.volume=n('p_vol');o.arv=$('p_arv').value}
+  try{await api('/api/producao/'+(pcur?.id||'p'+Date.now()),'PUT',o);show('prod');loadProd()}catch(e){alert(e.message)}};
+$('prm').onclick=async()=>{if(!pcur||!confirm('Excluir este lançamento?'))return;
+  try{await api('/api/producao/'+pcur.id,'DELETE');show('prod');loadProd()}catch(e){alert(e.message)}};
 (async()=>{try{enter(await api('/api/me'))}catch(e){show('auth')}})();
 </script></body></html>
