@@ -81,6 +81,23 @@ app.put('/api/producao/:id',auth,W(async(q,s)=>{
   r.rowCount?s.json({ok:1}):s.status(403).json({erro:'Sem permissão'})}));
 app.delete('/api/producao/:id',auth,W(async(q,s)=>{
   await pool.query('DELETE FROM producao WHERE id=$1 AND user_id=$2',[q.params.id,q.uid]);s.json({ok:1})}));
+const LST=['','Verde','Amarela','Cinza','Vermelha'];
+app.get('/api/agenda',auth,W(async(q,s)=>{
+  const p=per(q);if(!p)return s.status(400).json({erro:'Período inválido'});
+  const r=await pool.query('SELECT id,dia,hora,data FROM agenda WHERE user_id=$1 AND dia BETWEEN $2 AND $3 ORDER BY dia,hora,updated',[q.uid,p[0],p[1]]);
+  s.json({res:r.rows.map(x=>({id:x.id,dia:x.dia,hora:x.hora,...x.data}))})}));
+app.put('/api/agenda/:id',auth,W(async(q,s)=>{
+  if(!ID.test(q.params.id))return s.status(400).json({erro:'ID inválido'});
+  const b=q.body||{},dia=String(b.dia||''),hora=/^([01]\d|2[0-3]):[0-5]\d$/.test(String(b.hora||''))?b.hora:'';
+  if(!DIA.test(dia))return s.status(400).json({erro:'Data inválida'});
+  const d={};['razao','cnpj','contato','endereco'].forEach(k=>d[k]=String(b[k]??'').slice(0,300));
+  ['objetivo','feedback'].forEach(k=>d[k]=String(b[k]??'').slice(0,2000));
+  d.lista=LST.includes(b.lista)?b.lista:'';
+  const r=await pool.query(`INSERT INTO agenda(id,user_id,dia,hora,data,updated) VALUES($1,$2,$3,$4,$5,$6)
+    ON CONFLICT(id) DO UPDATE SET dia=$3,hora=$4,data=$5,updated=$6 WHERE agenda.user_id=$2`,[q.params.id,q.uid,dia,hora,d,Date.now()]);
+  r.rowCount?s.json({ok:1}):s.status(403).json({erro:'Sem permissão'})}));
+app.delete('/api/agenda/:id',auth,W(async(q,s)=>{
+  await pool.query('DELETE FROM agenda WHERE id=$1 AND user_id=$2',[q.params.id,q.uid]);s.json({ok:1})}));
 process.on('unhandledRejection',e=>console.error(e));
 app.use(express.static(path.join(__dirname,'public')));
 (async()=>{
@@ -88,6 +105,8 @@ app.use(express.static(path.join(__dirname,'public')));
   CREATE TABLE IF NOT EXISTS visitas(id TEXT PRIMARY KEY,user_id INT NOT NULL REFERENCES users(id),cnpj TEXT,data JSONB NOT NULL,updated BIGINT);
   CREATE INDEX IF NOT EXISTS visitas_cnpj ON visitas(cnpj);
   CREATE TABLE IF NOT EXISTS producao(id TEXT PRIMARY KEY,user_id INT NOT NULL REFERENCES users(id),tipo TEXT NOT NULL,dia TEXT NOT NULL,data JSONB NOT NULL,updated BIGINT);
-  CREATE INDEX IF NOT EXISTS producao_u ON producao(user_id,dia)`);
+  CREATE INDEX IF NOT EXISTS producao_u ON producao(user_id,dia);
+  CREATE TABLE IF NOT EXISTS agenda(id TEXT PRIMARY KEY,user_id INT NOT NULL REFERENCES users(id),dia TEXT NOT NULL,hora TEXT,data JSONB NOT NULL,updated BIGINT);
+  CREATE INDEX IF NOT EXISTS agenda_u ON agenda(user_id,dia)`);
   app.listen(process.env.PORT||3000,()=>console.log('ok'));
 })().catch(e=>{console.error(e);process.exit(1)});

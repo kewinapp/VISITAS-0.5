@@ -14,14 +14,14 @@ button{font:inherit;border:0;border-radius:8px;padding:10px 14px;background:var(
 button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transparent;color:var(--rd)}
 .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row>button{flex:0 0 auto}
 .bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}.bar input{flex:1;min-width:150px}
-.tabs{display:flex;gap:8px;margin:4px 0 14px}.tabs button{flex:1;background:var(--ac2);color:var(--ac);font-weight:600}.tabs button.on{background:var(--ac);color:#fff}
+.tabs{display:flex;gap:8px;margin:4px 0 14px}.tabs button{flex:1;padding:10px 6px;background:var(--ac2);color:var(--ac);font-weight:600}.tabs button.on{background:var(--ac);color:#fff}
 .it{cursor:pointer}.it b{display:block}.it small,.dl span{color:var(--mu)}
 .tag{display:inline-block;background:var(--ac2);color:var(--ac);border-radius:99px;padding:2px 10px;font-size:.75rem;margin:4px 4px 0 0}
 .pw{white-space:pre-wrap}.ver{position:fixed;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));font-size:.75rem;color:var(--mu);opacity:.8;pointer-events:none}.hide{display:none}.msg{color:var(--mu);text-align:center;padding:20px}.err{color:var(--rd);min-height:1.2em;margin-top:8px}
 .aviso{background:var(--wn);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.9rem}.dl{margin:6px 0}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.top span{color:var(--mu);font-size:.9rem}
 </style></head><body><main>
-<div class="ver">v0.7</div>
+<div class="ver">v0.8</div>
 
 <div id="auth" class="hide"><h1>📋 Agenda Business</h1><div class="card">
 <div class="row"><button class="sec" id="tLogin">Entrar</button><button class="sec" id="tReg">Criar conta</button></div>
@@ -32,7 +32,7 @@ button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transpare
 
 <div id="hdr" class="hide">
 <div class="top"><h1>📋 Agenda Business</h1><span><span id="who"></span> · <a href="#" id="out">Sair</a></span></div>
-<div class="tabs"><button id="tVis">Visitas PJ</button><button id="tProd">Produção</button></div></div>
+<div class="tabs"><button id="tVis">Visitas PJ</button><button id="tProd">Produção</button><button id="tAg">Agenda</button></div></div>
 
 <div id="list" class="hide">
 <div class="bar"><button class="sec" id="toRes">📊 Resumo</button></div>
@@ -60,6 +60,27 @@ button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transpare
 <div class="bar"><button id="pWa">💬 WhatsApp</button><button class="sec" id="pCp">Copiar texto</button><button class="sec" id="pXl">📗 Excel</button></div>
 <div id="pper"></div>
 <h2>Lançamentos do período</h2><div id="plist"></div></div>
+
+<div id="agenda" class="hide">
+<div class="bar"><button id="anew">+ Agendar visita</button></div>
+<div class="card"><div class="row"><button class="sec" id="aPrev">←</button><b id="asem" style="text-align:center"></b><button class="sec" id="aNext">→</button></div>
+<div class="bar"><button class="sec" id="aHoje">Esta semana</button></div></div>
+<div id="adias"></div>
+<h2>📄 Relatório do dia</h2>
+<div class="card"><label>Dia</label><input type="date" id="adia"><div id="acont" style="margin-top:8px"></div></div>
+<div class="bar"><button id="aWa">💬 WhatsApp</button><button class="sec" id="aCp">Copiar texto</button><button class="sec" id="aXl">📗 Excel</button></div>
+<div id="arel"></div></div>
+
+<div id="aform" class="hide"><h1 id="aft">Agendar visita</h1><div class="card">
+<label>Razão social</label><input id="a_razao">
+<label>CNPJ</label><input id="a_cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18">
+<label>Lista</label><select id="a_lista"><option value="">Selecione</option><option value="Verde">🟢 Lista verde</option><option value="Amarela">🟡 Lista amarela</option><option value="Cinza">⚪ Lista cinza</option><option value="Vermelha">🔴 Lista vermelha</option></select>
+<label>Nome do contato</label><input id="a_contato">
+<div class="row"><div><label>Dia</label><input type="date" id="a_dia"></div><div><label>Horário agendado</label><input type="time" id="a_hora"></div></div>
+<label>Endereço</label><input id="a_end">
+<label>Objetivo da visita</label><textarea id="a_obj"></textarea>
+<div id="fbBox"><h2>Feedback da visita</h2><textarea id="a_fb" placeholder="Como foi a visita? Resultado, pendências, próximos passos"></textarea></div></div>
+<div class="bar"><button id="asave">Salvar</button><button class="sec" id="acancel">Voltar</button><button class="del" id="arm">Excluir</button></div></div>
 
 <div id="form" class="hide"><h1 id="ft">Nova visita</h1><div class="card">
 <h2>Empresa</h2>
@@ -101,7 +122,7 @@ button.sec{background:var(--ac2);color:var(--ac)}button.del{background:transpare
 </main>
 <script>
 const $=id=>document.getElementById(id),F=['data','nome','cnpj','contato','segmento','lista','historia','fat','rec','pagBol','inv','cg','gar','viabiliza'];
-const S=['auth','list','resumo','prod','form','pform'];
+const S=['auth','list','resumo','prod','agenda','form','pform','aform'];
 let rows=[],cur=null,reg=false,resRows=[],prodRows=[],mesRows=[],pcur=null;
 const ic={Verde:'🟢',Amarela:'🟡',Cinza:'⚪',Vermelha:'🔴'},ico={Seguros:'🛡️','Consórcio':'🤝','Viabilizado novo':'✅',Credenciamento:'💳',Total:'📈'};
 const TN={seguro:'🛡️ Seguro',consorcio:'🤝 Consórcio',viabilizado:'✅ Viabilizado novo',credenciamento:'💳 Credenciamento'};
@@ -113,8 +134,8 @@ const per=(a,b)=>a===b?BR(a):BR(a)+' a '+BR(b);
 async function api(p,m='GET',b){const r=await fetch(p,{method:m,headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined});
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.erro||'Erro');e.st=r.status;throw e}return j}
 function show(id){S.forEach(x=>$(x).classList.toggle('hide',x!==id));
-  $('hdr').classList.toggle('hide',!['list','resumo','prod'].includes(id));
-  $('tVis').classList.toggle('on',id!=='prod');$('tProd').classList.toggle('on',id==='prod');scrollTo(0,0)}
+  $('hdr').classList.toggle('hide',!['list','resumo','prod','agenda'].includes(id));
+  const tb={list:'tVis',resumo:'tVis',prod:'tProd',agenda:'tAg'}[id];['tVis','tProd','tAg'].forEach(x=>$(x).classList.toggle('on',x===tb));scrollTo(0,0)}
 /* exportar */
 function wa(t){window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 async function cp(t){try{await navigator.clipboard.writeText(t);alert('Texto copiado.')}catch(e){prompt('Copie o texto:',t)}}
@@ -228,5 +249,40 @@ $('psave').onclick=async()=>{const t=$('p_tipo').value,n=id=>parseFloat($(id).va
   try{await api('/api/producao/'+(pcur?.id||'p'+Date.now()),'PUT',o);show('prod');loadProd()}catch(e){alert(e.message)}};
 $('prm').onclick=async()=>{if(!pcur||!confirm('Excluir este lançamento?'))return;
   try{await api('/api/producao/'+pcur.id,'DELETE');show('prod');loadProd()}catch(e){alert(e.message)}};
+/* agenda semanal */
+let sem=null,agDia=[],acur=null;
+const seg=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const wd=d=>d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+const lt=l=>l?`<span class="tag">${ic[l]||''} Lista ${esc(l.toLowerCase())}</span>`:'';
+$('tAg').onclick=()=>{show('agenda');loadAg()};
+async function loadAg(){if(!sem)sem=seg(new Date());if(!$('adia').value)$('adia').value=hoje();
+  const a=iso(sem),b=iso(addD(sem,6));$('asem').textContent=BR(a).slice(0,5)+' a '+BR(b).slice(0,5);
+  try{const rs=(await api(`/api/agenda?de=${a}&ate=${b}`)).res;let h='';
+    for(let i=0;i<7;i++){const d=addD(sem,i),k=iso(d),l=rs.filter(r=>r.dia===k);
+      h+=`<h2 style="text-transform:capitalize${k===hoje()?';color:var(--tx)':''}">${k===hoje()?'📍 ':''}${esc(wd(d))}</h2>`+(l.length?l.map(r=>`<div class="card it" data-id="${esc(r.id)}" data-r='${esc(JSON.stringify(r)).replace(/'/g,'&#39;')}'><b>⏰ ${esc(r.hora)||'--:--'} — ${esc(r.razao)}</b><small>${esc(r.cnpj)}${r.contato?' · '+esc(r.contato):''}${r.endereco?' · 📍 '+esc(r.endereco):''}</small>${r.objetivo?`<div class="dl pw"><span>Objetivo:</span> ${esc(r.objetivo)}</div>`:''}<div>${lt(r.lista)}<span class="tag">${r.feedback?'✅ Feedback lançado':'⏳ Aguardando feedback'}</span></div></div>`).join(''):'<div class="dl"><span>Sem visitas agendadas</span></div>')}
+    $('adias').innerHTML=h}catch(e){if(e.st===401)show('auth');else $('adias').innerHTML=`<div class="err">${esc(e.message)}</div>`}
+  relDia()}
+async function relDia(){const d=$('adia').value;if(!d)return;
+  try{agDia=(await api(`/api/agenda?de=${d}&ate=${d}`)).res;
+    $('acont').innerHTML=`<b>${agDia.length}</b> visita(s) · ${agDia.filter(r=>r.feedback).length} com feedback`;
+    $('arel').innerHTML=agDia.length?agDia.map(r=>`<div class="card"><b>${esc(r.razao)}</b><div class="dl"><span>CNPJ:</span> ${esc(r.cnpj)||'—'}</div><div class="dl"><span>Lista:</span> ${r.lista?ic[r.lista]+' '+esc(r.lista):'—'}</div><div class="dl pw"><span>Feedback:</span> ${esc(r.feedback)||'— ainda sem feedback'}</div></div>`).join(''):'<div class="msg">Nenhuma visita neste dia.</div>'}
+  catch(e){$('arel').innerHTML=`<div class="err">${esc(e.message)}</div>`}}
+$('aPrev').onclick=()=>{sem=addD(sem,-7);loadAg()};$('aNext').onclick=()=>{sem=addD(sem,7);loadAg()};$('aHoje').onclick=()=>{sem=seg(new Date());loadAg()};$('adia').onchange=relDia;
+function txtA(){let t=`*Agenda Business — Relatório do dia*\n${BR($('adia').value)}\nTotal: ${agDia.length} visita(s)\n`;
+  agDia.forEach((r,i)=>{t+=`\n${i+1}) *${r.razao}* — ${r.cnpj||'sem CNPJ'}\nLista: ${r.lista?ic[r.lista]+' '+r.lista:'—'}\nFeedback: ${r.feedback||'—'}\n`});return t}
+$('aWa').onclick=()=>wa(txtA());$('aCp').onclick=()=>cp(txtA());
+$('aXl').onclick=()=>xl([['Nome','CNPJ','Lista','Feedback'],...agDia.map(r=>[r.razao,r.cnpj,r.lista,r.feedback])],'agenda-'+$('adia').value);
+const AM=[['a_razao','razao'],['a_cnpj','cnpj'],['a_lista','lista'],['a_contato','contato'],['a_hora','hora'],['a_end','endereco'],['a_obj','objetivo'],['a_fb','feedback']];
+function openA(r){acur=r||null;$('aft').textContent=r?'Editar visita agendada':'Agendar visita';
+  AM.forEach(([i,k])=>$(i).value=r?.[k]??'');$('a_dia').value=r?.dia||hoje();
+  $('fbBox').classList.toggle('hide',!r);$('arm').classList.toggle('hide',!r);show('aform')}
+$('anew').onclick=()=>openA();$('acancel').onclick=()=>{show('agenda');loadAg()};$('a_cnpj').oninput=mask;
+$('adias').onclick=e=>{const c=e.target.closest('.it');if(c)openA(JSON.parse(c.dataset.r))};
+$('asave').onclick=async()=>{if(!$('a_razao').value.trim())return alert('Informe a razão social.');if(!$('a_dia').value)return alert('Informe o dia.');
+  const o={dia:$('a_dia').value,hora:$('a_hora').value,razao:$('a_razao').value,cnpj:$('a_cnpj').value,lista:$('a_lista').value,contato:$('a_contato').value,endereco:$('a_end').value,objetivo:$('a_obj').value,feedback:acur?$('a_fb').value:''};
+  try{await api('/api/agenda/'+(acur?.id||'g'+Date.now()),'PUT',o);sem=seg(new Date(o.dia+'T12:00:00'));show('agenda');loadAg()}catch(e){alert(e.message)}};
+$('arm').onclick=async()=>{if(!acur||!confirm('Excluir esta visita agendada?'))return;
+  try{await api('/api/agenda/'+acur.id,'DELETE');show('agenda');loadAg()}catch(e){alert(e.message)}};
 (async()=>{try{enter(await api('/api/me'))}catch(e){show('auth')}})();
 </script></body></html>

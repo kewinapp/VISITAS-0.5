@@ -1,4 +1,4 @@
-# Agenda Business v0.7
+# Agenda Business v0.8
 Node + Postgres. Login, visitas por gerente, consulta de CNPJ, classificação (lista verde/amarela/cinza/vermelha), "Como viabiliza" e Resumo por período (só do usuário), exportação (WhatsApp/Excel) e aba Produção.
 
 Estrutura (tudo na raiz do repositório):
